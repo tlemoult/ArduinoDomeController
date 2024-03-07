@@ -26,17 +26,13 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
   THE SOFTWARE.
 *******************************************************************************/
 
-#include <EEPROM.h>
-#include <avr/wdt.h>
-#include <SoftwareSerial.h>
-#include "MonsterMotorShield.h"
 #include "serial_command.h"
 
 
 // Configuration
-#define HAS_SHUTTER     // Uncomment if the shutter controller is available
+//#define HAS_SHUTTER     // Uncomment if the shutter controller is available
 //#define MOTOR_SHIELD  // Uncomment if the motor driver is a Monster Motor Shield
-//#define USE_BUTTONS   // Uncomment if you want to move the dome with push buttons
+#define USE_BUTTONS   // Uncomment if you want to move the dome with push buttons
 
 #define AZ_TIMEOUT      30000   // Azimuth movement timeout (in ms)
 #define AZ_TOLERANCE    4      	// Azimuth target tolerance in encoder ticks
@@ -44,28 +40,15 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
                                 // dome is at this number of ticks from the target
 
 // pin definitions
-#define ENCODER1 2      // Encoder
-#define ENCODER2 3      // Encoder
-#define HOME_SENSOR 10  // Home sensor (active low)
-#define BUTTON_CW   11  // CW movement button (active low)
-#define BUTTON_CCW  12  // CCW movement button (Active low)
+#define ENCODER1 4      // Encoder
+#define ENCODER2 5      // Encoder
+#define HOME_SENSOR 16  // Home sensor (active high)
+#define BUTTON_CW   12  // CW movement button (active high)
+#define BUTTON_CCW  29  // CCW movement button (active high)
 
-#ifdef HAS_SHUTTER
-#ifdef MOTOR_SHIELD
-#error "HAS_SHUTTER and MOTOR_SHIELD cannot be defined at the same time"
-#endif
-
-// pins of HC12 module (serial radio transceiver)
-#define HC12_RX 4       // Receive Pin on HC12
-#define HC12_TX 5       // Transmit Pin on HC12
-#endif
-
-// motor pins (if not using the Monster Motor Shield)
-#ifndef MOTOR_SHIELD
-#define MOTOR_JOG 7     // Motor jog mode (low speed)
-#define MOTOR_CW 8      // Move motor clockwise
-#define MOTOR_CCW 9     // Move motor counterclockwise
-#endif
+// motor pins 
+#define MOTOR_CW 30      // Move motor clockwise
+#define MOTOR_CCW 27     // Move motor counterclockwise
 
 // Message Destination
 #define TO_MAXDOME  0x00
@@ -140,16 +123,8 @@ enum ShutterStatus {
 };
 
 
-#ifdef HAS_SHUTTER
-// Create a Software Serial Port to communicate with the shutter controller
-SoftwareSerial HC12(HC12_TX, HC12_RX);
-#endif
-
 SerialCommand sCmd;
 
-#ifdef MOTOR_SHIELD
-Motor motor(0);
-#endif
 
 bool park_on_shutter = false;
 bool home_reached = false;
@@ -180,6 +155,7 @@ void intToBytes(uint16_t value, uint8_t *data)
 }
 
 // Read a uint16_t value from EEPROM (little endian)
+/*
 uint16_t eepromReadUint16(int address)
 {
     uint16_t value1 = EEPROM.read(address);
@@ -195,7 +171,7 @@ void eepromWriteUint16(int address, uint16_t value)
     EEPROM.write(address, value1);
     EEPROM.write(address + 1, value2);
 }
-
+*/
 
 // Obtain the direction of the shortest path between two positons
 uint8_t getDirection(uint16_t current, uint16_t target)
@@ -225,7 +201,7 @@ inline void moveAzimuth(uint8_t dir, bool slow)
     int speed = slow ? 800 : 1023;
     motor.run(dir == DIR_CW, speed);
 #else
-    digitalWrite(MOTOR_JOG, slow);
+    //digitalWrite(MOTOR_JOG, slow);
     digitalWrite(MOTOR_CW, dir == DIR_CW);
     digitalWrite(MOTOR_CCW, dir != DIR_CW);
 #endif
@@ -237,7 +213,7 @@ inline void stopAzimuth()
 #ifdef MOTOR_SHIELD
     motor.stop();
 #else
-    digitalWrite(MOTOR_JOG, LOW);
+    //digitalWrite(MOTOR_JOG, LOW);
     digitalWrite(MOTOR_CW, LOW);
     digitalWrite(MOTOR_CCW, LOW);
 #endif
@@ -400,8 +376,8 @@ void cmdSetPark(uint8_t *cmd)
     park_on_shutter = cmd[3];
     park_pos = bytesToInt(cmd + 4);
 
-    EEPROM.write(ADDR_PARK_ON_SHUTTER, park_on_shutter);
-    eepromWriteUint16(ADDR_PARK_POS, park_pos);
+    //EEPROM.write(ADDR_PARK_ON_SHUTTER, park_on_shutter);
+    //eepromWriteUint16(ADDR_PARK_POS, park_pos);
 
     uint8_t resp[] = {START, 2, TO_COMPUTER | SETPARK_CMD, 0x00};
     sCmd.sendResponse(resp, 4);
@@ -410,7 +386,7 @@ void cmdSetPark(uint8_t *cmd)
 void cmdSetTicks(uint8_t *cmd)
 {
     ticks_per_turn = bytesToInt(cmd + 3);
-    eepromWriteUint16(ADDR_TICKS_PER_TURN, ticks_per_turn);
+    //eepromWriteUint16(ADDR_TICKS_PER_TURN, ticks_per_turn);
 
     uint8_t resp[] = {START, 2, TO_COMPUTER | TICKS_CMD, 0x00};
     sCmd.sendResponse(resp, 4);
@@ -531,8 +507,6 @@ void encoderISR()
 
 void setup()
 {
-    wdt_disable();
-    wdt_enable(WDTO_2S);
 
     sCmd.addCommand(ABORT_CMD, 2, cmdAbort);
     sCmd.addCommand(HOME_CMD, 2, cmdHomeAzimuth);
@@ -545,35 +519,35 @@ void setup()
     sCmd.addCommand(VBAT_CMD, 2, cmdVBat);
 
     pinMode(LED_BUILTIN, OUTPUT);
-    pinMode(HOME_SENSOR, INPUT_PULLUP);
-    pinMode(BUTTON_CW, INPUT_PULLUP);
-    pinMode(BUTTON_CCW, INPUT_PULLUP);
+    pinMode(HOME_SENSOR, INPUT);
+    pinMode(BUTTON_CW, INPUT);
+    pinMode(BUTTON_CCW, INPUT);
 
-#ifndef MOTOR_SHIELD
-    pinMode(MOTOR_JOG, OUTPUT);
+    //pinMode(MOTOR_JOG, OUTPUT);
     pinMode(MOTOR_CW, OUTPUT);
     pinMode(MOTOR_CCW, OUTPUT);
-#endif
 
     attachInterrupt(digitalPinToInterrupt(ENCODER1), encoderISR, CHANGE);
 
+    /*
     park_pos = eepromReadUint16(ADDR_PARK_POS);
     park_on_shutter = EEPROM.read(ADDR_PARK_ON_SHUTTER);
     ticks_per_turn = eepromReadUint16(ADDR_TICKS_PER_TURN);
+*/
+    park_pos = 10;
+    park_on_shutter = 15;
+    ticks_per_turn = 3500;
 
     Serial.begin(19200);
 
-#ifdef HAS_SHUTTER
-    HC12.begin(9600);   // Open serial port to HC12
-#endif
 }
 
 // move the motor when the buttons are pressed
 void read_buttons()
 {
     static int prev_cw_button = 0, prev_ccw_button = 0;
-    int cw_button = !digitalRead(BUTTON_CW);
-    int ccw_button = !digitalRead(BUTTON_CCW);
+    int cw_button = digitalRead(BUTTON_CW);
+    int ccw_button = digitalRead(BUTTON_CCW);
 
     if (cw_button != prev_cw_button) {
         if (cw_button) {
@@ -604,13 +578,10 @@ void loop()
 {
     sCmd.readSerial();
     updateAzimuthFSM();
-#ifdef USE_BUTTONS
     read_buttons();
-#endif
-    wdt_reset();
 
     // store detected home position
-    if (!digitalRead(HOME_SENSOR)) {
+    if (digitalRead(HOME_SENSOR)) {
         if (state == ST_HOMING) {
             home_pos = 0;
             current_pos = 0;

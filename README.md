@@ -1,3 +1,6 @@
+Work in progress.... Just forked, still not functionnal.
+========================================================
+
 ArduinoDomeController
 =====================
 

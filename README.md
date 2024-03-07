@@ -38,6 +38,29 @@ which are connected to the following terminals in the VFD:
  
 For more details, read the definitions in [DomeController.ino](DomeController/DomeController.ino).
 
+### Serial port selection
+
+Set the controller port. It can be  UART over USB or a real RS232C.
+By default, ADAfruit we use the USB port.
+If we want tu use a real RS232C, we need to change the pin confuguration file 
+of ADAfruit Arduino ADA Fruit package.
+
+In a windows installation arduino look into this file the following modification:
+C:\Users\youruser\AppData\Local\Arduino15\packages\adafruit\hardware\nrf52\1.6.0\variants\feather_nrf52832\variant.h
+
+For USB
+```
+#define PIN_SERIAL_RX       (8)
+#define PIN_SERIAL_TX       (6)
+```
+
+For RS232
+```
+#define PIN_SERIAL_RX       (3)
+#define PIN_SERIAL_TX       (2)
+```
+
+
 Shutter controller (slave controler)
 ------------------
 

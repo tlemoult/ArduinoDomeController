@@ -50,6 +50,10 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #define MOTOR_CW 30      // Move motor clockwise
 #define MOTOR_CCW 27     // Move motor counterclockwise
 
+// debug pin
+#define DEBUG_1 28
+#define DEBUG_2 20
+
 // Message Destination
 #define TO_MAXDOME  0x00
 #define TO_COMPUTER 0x80
@@ -134,7 +138,7 @@ uint16_t park_pos = 0;          // Parking position
 uint16_t current_pos = 0;       // Current dome position
 uint16_t target_pos = 0;        // Target dome position
 uint16_t home_pos = 0;          // Home position
-uint16_t ticks_per_turn = 360;  // Encoder ticks per dome revolution
+uint16_t ticks_per_turn = 3600;  // Encoder ticks per dome revolution
 AzimuthStatus state = ST_IDLE;
 AzimuthEvent az_event = EVT_NONE;
 
@@ -197,26 +201,17 @@ uint16_t getDistance(uint16_t current, uint16_t target)
 inline void moveAzimuth(uint8_t dir, bool slow)
 {
     digitalWrite(LED_BUILTIN, HIGH);
-#ifdef MOTOR_SHIELD
-    int speed = slow ? 800 : 1023;
-    motor.run(dir == DIR_CW, speed);
-#else
     //digitalWrite(MOTOR_JOG, slow);
     digitalWrite(MOTOR_CW, dir == DIR_CW);
     digitalWrite(MOTOR_CCW, dir != DIR_CW);
-#endif
 }
 
 inline void stopAzimuth()
 {
     digitalWrite(LED_BUILTIN, LOW);
-#ifdef MOTOR_SHIELD
-    motor.stop();
-#else
     //digitalWrite(MOTOR_JOG, LOW);
     digitalWrite(MOTOR_CW, LOW);
     digitalWrite(MOTOR_CCW, LOW);
-#endif
 }
 
 float getShutterVBat()
@@ -371,6 +366,8 @@ void cmdStatus(uint8_t *cmd)
     sCmd.sendResponse(resp, 11);
 }
 
+
+
 void cmdSetPark(uint8_t *cmd)
 {
     park_on_shutter = cmd[3];
@@ -491,18 +488,25 @@ void updateAzimuthFSM()
 // Encoder interrupt service routine
 void encoderISR()
 {
-    if(digitalRead(ENCODER1) == digitalRead(ENCODER2)) {
+  static uint16_t encoder_fine_pos = 0;
+  static const uint16_t ticks_fine = 100;
+
+    if(digitalRead(ENCODER2)) {
+      // decrement direction
         if (current_pos == 0)
             current_pos = ticks_per_turn - 1;
         else
             current_pos--;
     }
-    else {
+    else 
+    {
+        // increment direction
         if (current_pos >= ticks_per_turn - 1)
             current_pos = 0;
         else
             current_pos++;
     }
+
 }
 
 void setup()
@@ -526,8 +530,20 @@ void setup()
     //pinMode(MOTOR_JOG, OUTPUT);
     pinMode(MOTOR_CW, OUTPUT);
     pinMode(MOTOR_CCW, OUTPUT);
+    digitalWrite(MOTOR_CW, LOW);
+    digitalWrite(MOTOR_CCW, LOW);
 
-    attachInterrupt(digitalPinToInterrupt(ENCODER1), encoderISR, CHANGE);
+    pinMode(DEBUG_1,OUTPUT);
+    digitalWrite(DEBUG_1,LOW);
+    pinMode(DEBUG_2,OUTPUT);
+    digitalWrite(DEBUG_2,HIGH);
+
+    pinMode(ENCODER1,INPUT);
+    pinMode(ENCODER2,INPUT);
+
+    delay(100);
+
+    attachInterrupt(digitalPinToInterrupt(ENCODER1), encoderISR, RISING);
 
     /*
     park_pos = eepromReadUint16(ADDR_PARK_POS);
@@ -536,7 +552,7 @@ void setup()
 */
     park_pos = 10;
     park_on_shutter = 15;
-    ticks_per_turn = 3500;
+    ticks_per_turn = 7000;
 
     Serial.begin(19200);
 

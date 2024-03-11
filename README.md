@@ -46,7 +46,9 @@ If we want tu use a real RS232C, we need to change the pin confuguration file
 of ADAfruit Arduino ADA Fruit package.
 
 In a windows installation arduino look into this file the following modification:
-C:\Users\youruser\AppData\Local\Arduino15\packages\adafruit\hardware\nrf52\1.6.0\variants\feather_nrf52832\variant.h
+into this file the following modification:
+ * windows OS: ``C:\Users\youruser\AppData\Local\Arduino15\packages\adafruit\hardware\nrf52\1.6.0\variants\feather_nrf52832\variant.h``
+ * linux OS: ``~/.arduino15/packages/adafruit/hardware/nrf52/1.6.0/variants/feather_nrf52832/variant.h``
 
 For USB
 ```

@@ -138,7 +138,9 @@ uint16_t park_pos = 0;          // Parking position
 uint16_t current_pos = 0;       // Current dome position
 uint16_t target_pos = 0;        // Target dome position
 uint16_t home_pos = 0;          // Home position
-uint16_t ticks_per_turn = 3600;  // Encoder ticks per dome revolution
+uint16_t ticks_per_turn = 600;  // Encoder ticks per dome revolution
+const uint16_t encoder_pre_divider = 10;
+
 AzimuthStatus state = ST_IDLE;
 AzimuthEvent az_event = EVT_NONE;
 
@@ -489,22 +491,35 @@ void updateAzimuthFSM()
 void encoderISR()
 {
   static uint16_t encoder_fine_pos = 0;
-  static const uint16_t ticks_fine = 100;
-
+ 
     if(digitalRead(ENCODER2)) {
       // decrement direction
-        if (current_pos == 0)
-            current_pos = ticks_per_turn - 1;
+        if (encoder_fine_pos == 0)
+          {
+            encoder_fine_pos = encoder_pre_divider - 1;
+            // decrement the current_pos
+            if (current_pos == 0)
+              current_pos = ticks_per_turn - 1;
+            else
+              current_pos--;
+          }
         else
-            current_pos--;
+            encoder_fine_pos--;
     }
     else 
     {
         // increment direction
-        if (current_pos >= ticks_per_turn - 1)
-            current_pos = 0;
+        if (encoder_fine_pos >= encoder_pre_divider - 1)
+          {
+            encoder_fine_pos = 0;
+            // increment the current_pos
+            if (current_pos >= ticks_per_turn - 1)
+              current_pos = 0;
+            else
+              current_pos++;
+          }
         else
-            current_pos++;
+            encoder_fine_pos++;
     }
 
 }

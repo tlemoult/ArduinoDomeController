@@ -138,7 +138,7 @@ uint16_t park_pos = 0;          // Parking position
 uint16_t current_pos = 0;       // Current dome position
 uint16_t target_pos = 0;        // Target dome position
 uint16_t home_pos = 0;          // Home position
-uint16_t ticks_per_turn = 600;  // Encoder ticks per dome revolution
+uint16_t ticks_per_turn = 360;  // Encoder ticks per dome revolution
 const uint16_t encoder_pre_divider = 10;
 
 AzimuthStatus state = ST_IDLE;
@@ -565,9 +565,6 @@ void setup()
     park_on_shutter = EEPROM.read(ADDR_PARK_ON_SHUTTER);
     ticks_per_turn = eepromReadUint16(ADDR_TICKS_PER_TURN);
 */
-    park_pos = 10;
-    park_on_shutter = 15;
-    ticks_per_turn = 7000;
 
     Serial.begin(19200);
 

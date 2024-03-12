@@ -31,12 +31,11 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 
 // Configuration
 //#define HAS_SHUTTER     // Uncomment if the shutter controller is available
-//#define MOTOR_SHIELD  // Uncomment if the motor driver is a Monster Motor Shield
 #define USE_BUTTONS   // Uncomment if you want to move the dome with push buttons
 
 #define AZ_TIMEOUT      30000   // Azimuth movement timeout (in ms)
 #define AZ_TOLERANCE    4      	// Azimuth target tolerance in encoder ticks
-#define AZ_SLOW_RANGE   8       // The motor will run at slower speed when the
+#define AZ_SLOW_RANGE   16       // The motor will run at slower speed when the
                                 // dome is at this number of ticks from the target
 
 // pin definitions
@@ -49,6 +48,7 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // motor pins 
 #define MOTOR_CW 30      // Move motor clockwise
 #define MOTOR_CCW 27     // Move motor counterclockwise
+#define MOTOR_JOG 26     // Slow speed motor input (SHUTTER_OPEN Relay in our board)
 
 // debug pin
 #define DEBUG_1 28
@@ -138,8 +138,8 @@ uint16_t park_pos = 0;          // Parking position
 uint16_t current_pos = 0;       // Current dome position
 uint16_t target_pos = 0;        // Target dome position
 uint16_t home_pos = 0;          // Home position
-uint16_t ticks_per_turn = 360;  // Encoder ticks per dome revolution
-const uint16_t encoder_pre_divider = 10;
+uint16_t ticks_per_turn = 600;  // Encoder ticks per dome revolution
+const uint16_t encoder_pre_divider = 5;
 
 AzimuthStatus state = ST_IDLE;
 AzimuthEvent az_event = EVT_NONE;
@@ -203,7 +203,7 @@ uint16_t getDistance(uint16_t current, uint16_t target)
 inline void moveAzimuth(uint8_t dir, bool slow)
 {
     digitalWrite(LED_BUILTIN, HIGH);
-    //digitalWrite(MOTOR_JOG, slow);
+    digitalWrite(MOTOR_JOG, slow);
     digitalWrite(MOTOR_CW, dir == DIR_CW);
     digitalWrite(MOTOR_CCW, dir != DIR_CW);
 }
@@ -211,7 +211,7 @@ inline void moveAzimuth(uint8_t dir, bool slow)
 inline void stopAzimuth()
 {
     digitalWrite(LED_BUILTIN, LOW);
-    //digitalWrite(MOTOR_JOG, LOW);
+    digitalWrite(MOTOR_JOG, LOW);
     digitalWrite(MOTOR_CW, LOW);
     digitalWrite(MOTOR_CCW, LOW);
 }
@@ -542,7 +542,7 @@ void setup()
     pinMode(BUTTON_CW, INPUT);
     pinMode(BUTTON_CCW, INPUT);
 
-    //pinMode(MOTOR_JOG, OUTPUT);
+    pinMode(MOTOR_JOG, OUTPUT);
     pinMode(MOTOR_CW, OUTPUT);
     pinMode(MOTOR_CCW, OUTPUT);
     digitalWrite(MOTOR_CW, LOW);

@@ -25,87 +25,48 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 *******************************************************************************/
-
-#include <avr/wdt.h>
-#include "MonsterMotorShield.h"
+#include <bluefruit.h>
 #include "SerialCommand.h"
 #include "shutter.h"
+#include "ble.h"
 
 // Pin definitions
 #define LED_ERR  13     // error LED
-#define SW_A1    12     // shutter closed switch (NC)
-#define SW_A2    11     // shutter open switch (NO)
-#define SW_B1    10     // flap closed switch (NC)
-#define SW_B2    3      // flap open switch (NO)
-#define SW_INTER 2      // shutter interference detection switch (NC)
-#define BUTTONS  A4     // analog input for reading the buttons
-#define VBAT_PIN A5     // battery voltage reading
+#define PIN_LIMIT_SWITCH_CLOSE    7     // shutter closed switch (NC)
+#define PIN_LIMIT_SWITCH_OPEN    15     // shutter open switch (NO)
 
-#define BUTTON_REPS 80  // Number of ADC readings required to detect a pressed button
+#define VBAT_PIN A1     // 12V input battery voltage reading
+
+#define PIN_BUTTON_OPEN 29
+#define PIN_BUTTON_CLOSE 28
 
 // Timeouts in ms
 #define COMMAND_TIMEOUT 60000   // Max. time from last command
 #define SHUTTER_TIMEOUT 75000   // Max. time the shutter takes to open/close
 #define FLAP_TIMEOUT 15000      // Max. time the flap takes to open/close
 
-enum {
-    BTN_NONE,
-    BTN_A_OPEN,
-    BTN_A_CLOSE,
-    BTN_B_OPEN,
-    BTN_B_CLOSE,
-};
 
-// Detect mechanical interfence between the two shutters
-bool checkFlapInterference(State st)
-{
-    return (st == ST_OPENING) && digitalRead(SW_INTER);
-}
+Shutter shutter( PIN_LIMIT_SWITCH_CLOSE, PIN_LIMIT_SWITCH_OPEN, SHUTTER_TIMEOUT);
 
-// Detect mechanical interfence between the two shutters
-bool checkShutterInterference(State st)
-{
-    return (st == ST_CLOSING) && digitalRead(SW_INTER) && !digitalRead(SW_B1);
-}
-
-
-Motor motorA(0);
-Motor motorB(1);
-Shutter shutter(&motorA, SW_A1, SW_A2, SHUTTER_TIMEOUT, checkShutterInterference);
-Shutter flap(&motorB, SW_B1, SW_B2, FLAP_TIMEOUT, checkFlapInterference);
 SerialCommand sCmd;
 unsigned long lastCmdTime = 0;
 
-// Detect a pressed button by reading an analog input.
-// Every button puts a different voltage at the input.
-int readButton()
-{
-    int buttonLimits[] = {92, 303, 518, 820};
-    int val = analogRead(BUTTONS);
-
-    for (int i = 0; i < 4; i++) {
-        if (val < buttonLimits[i]) {
-            return i + 1;
-        }
-    }
-    return 0;
-}
+extern BLEUart bleuart;
 
 // Return dome status by combining shutter and flap statuses
 State domeStatus()
 {
     State sst = shutter.getState();
-    State fst = flap.getState();
 
-    if (sst == ST_ERROR || fst == ST_ERROR)
+    if (sst == ST_ERROR )
         return ST_ERROR;
-    else if (sst == ST_OPENING || fst == ST_OPENING)
+    else if (sst == ST_OPENING)
         return ST_OPENING;
-    else if (sst == ST_CLOSING || fst == ST_CLOSING)
+    else if (sst == ST_CLOSING)
         return ST_CLOSING;
-    else if (sst == ST_OPEN || fst == ST_OPEN)
+    else if (sst == ST_OPEN)
         return ST_OPEN;
-    else if (sst == ST_CLOSED && fst == ST_CLOSED)
+    else if (sst == ST_CLOSED )
         return ST_CLOSED;
 
     return ST_ABORTED;
@@ -120,28 +81,24 @@ void cmdOpenBoth()
 {
     lastCmdTime = millis();
     shutter.open();
-    flap.open();
 }
 
 void cmdClose()
 {
     lastCmdTime = millis();
     shutter.close();
-    flap.close();
 }
 
 void cmdAbort()
 {
     lastCmdTime = millis();
     shutter.abort();
-    flap.abort();
 }
 
 void cmdExit()
 {
     lastCmdTime = 0;
     shutter.close();
-    flap.close();
 }
 
 void cmdStatus()
@@ -162,10 +119,14 @@ void cmdGetVBat()
 
 void setup()
 {
-    wdt_disable();
-    wdt_enable(WDTO_1S);
-
     pinMode(LED_ERR, OUTPUT);
+
+    Serial.begin(115200); // for console message
+    for (int i=0;i<12;i++) 
+    {
+      Serial.println("Start Dome shutter");
+      delay(500);
+    }
 
     // Map serial commands to functions
     sCmd.addCommand("open", cmdOpenBoth);
@@ -176,9 +137,8 @@ void setup()
     sCmd.addCommand("stat", cmdStatus);
     sCmd.addCommand("vbat", cmdGetVBat);
 
-    Serial.begin(9600);
-
     digitalWrite(LED_ERR, HIGH);
+    ble_setup();  // for BLE exchange with the master board
     delay(200);
     digitalWrite(LED_ERR, LOW);
 }
@@ -186,48 +146,21 @@ void setup()
 
 void loop()
 {
-    int btn = readButton();
-    static int btn_prev = 0;
-    static int btn_count = 0;
-
-    if (btn && (btn == btn_prev))
-        btn_count++;
-    else
-        btn_count = 0;
-    btn_prev = btn;
-
-    if (btn_count == BUTTON_REPS) {
-        switch(btn) {
-        case BTN_A_OPEN:
-            shutter.open();
-            break;
-        case BTN_A_CLOSE:
-            shutter.close();
-            break;
-        case BTN_B_OPEN:
-            flap.open();
-            break;
-        case BTN_B_CLOSE:
-            flap.close();
-            break;
-        }
-    }
+    if (digitalRead(PIN_BUTTON_OPEN)) shutter.open();
+    if (digitalRead(PIN_BUTTON_CLOSE)) shutter.close();
 
     // Close the dome if time from last command > COMMAND_TIMEOUT
     if ((lastCmdTime > 0) && ((millis() - lastCmdTime) > COMMAND_TIMEOUT)) {
         if (domeStatus() != ST_CLOSED) {
             lastCmdTime = 0;
-            shutter.close();
-            flap.close();
+            shutter.close();           
         }
     }
 
-    int err = (shutter.getState() == ST_ERROR) || (flap.getState() == ST_ERROR);
+    int err = (shutter.getState() == ST_ERROR);
     digitalWrite(LED_ERR, err);
 
     shutter.update();
-    flap.update();
-    sCmd.readSerial();
+    sCmd.readSerial(&bleuart);
 
-    wdt_reset();
 }

@@ -25,8 +25,10 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 *******************************************************************************/
-
+#include <bluefruit.h>
+#include "ble.h"
 #include "serial_command.h"
+
 
 
 // Configuration
@@ -126,7 +128,7 @@ enum ShutterStatus {
     SS_ERROR
 };
 
-
+extern BLEClientUart clientUart; // bleuart client
 SerialCommand sCmd;
 
 
@@ -567,6 +569,8 @@ void setup()
 */
 
     Serial.begin(19200);
+
+    ble_setup();
 
 }
 

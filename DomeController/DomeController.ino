@@ -32,7 +32,7 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 
 
 // Configuration
-//#define HAS_SHUTTER     // Uncomment if the shutter controller is available
+#define HAS_SHUTTER     // Uncomment if the shutter controller is available
 #define USE_BUTTONS   // Uncomment if you want to move the dome with push buttons
 
 #define AZ_TIMEOUT      30000   // Azimuth movement timeout (in ms)
@@ -225,14 +225,14 @@ float getShutterVBat()
 #ifdef HAS_SHUTTER
     char buffer[5];
 
-    HC12.flush();
+    clientUart.flush();
     for (int i = 0; i < 4; i++) {
-        HC12.println("vbat");
+        clientUart.println("vbat");
         delay(100);
 
-        if (HC12.read() == 'v') {
+        if (clientUart.read() == 'v') {
             for (int j = 0; j < 4; j++) {
-                buffer[j] = HC12.read();
+                buffer[j] = clientUart.read();
             }
 
             buffer[4] = 0;
@@ -248,24 +248,30 @@ float getShutterVBat()
 
 ShutterStatus getShutterStatus()
 {
-    ShutterStatus st = SS_OPEN;
+    ShutterStatus st;
 
 #ifdef HAS_SHUTTER
-    st = SS_ERROR;
-    HC12.flush();
-    for (int i = 0; i < 4; i++) {
-        HC12.println("stat");
-        delay(100);
+    st = SS_ABORTED;
 
-        char c = 0;
-        while (HC12.available() > 0) {
-            c = HC12.read();
+    uint8_t receive_buffer[100];
+
+    // Flush buffer
+    clientUart.readBytes(receive_buffer,100);
+
+    size_t nb_bytes;
+    for (int i = 0; i < 4; i++) 
+    {
+        clientUart.println("stat");
+        delay(300);
+
+        nb_bytes = clientUart.read(receive_buffer,100);
+        char c = (char) receive_buffer[0];
+
+        if ((c >= '0') && (c <= ('0' + SS_ERROR)) ) {
+              st = (ShutterStatus)(c - '0');
+              break;
         }
 
-        if (c >= '0' && c <= ('0' + SS_ERROR)) {
-            st = (ShutterStatus)(c - '0');
-            break;
-        }
     }
 #endif
     return st;
@@ -275,7 +281,7 @@ ShutterStatus getShutterStatus()
 void cmdAbort(uint8_t *cmd)
 {
 #ifdef HAS_SHUTTER
-    HC12.println("abort");  // abort shutter movement
+    clientUart.println("abort");  // abort shutter movement
 #endif
 
     az_event = EVT_ABORT;
@@ -319,22 +325,22 @@ void cmdShutterCommand(uint8_t *cmd)
 #ifdef HAS_SHUTTER
     switch(cmd[3]) {
     case OPEN_SHUTTER:
-        HC12.println("open");
+        clientUart.println("open");
         break;
     case OPEN_UPPER_ONLY_SHUTTER:
-        HC12.println("open1");
+        clientUart.println("open1");
         break;
     case CLOSE_SHUTTER:
         if (park_on_shutter)
             parkDome();
         else
-            HC12.println("close");
+            clientUart.println("close");
         break;
     case EXIT_SHUTTER:
-        HC12.println("exit");
+        clientUart.println("exit");
         break;
     case ABORT_SHUTTER:
-        HC12.println("abort");
+        clientUart.println("abort");
         break;
     }
 #endif
@@ -360,6 +366,7 @@ void cmdStatus(uint8_t *cmd)
     }
 
     uint8_t sh_status = (uint8_t)getShutterStatus();
+    // uint8_t sh_status = (uint8_t)2;   // use for forcing status
     uint8_t resp[] = {START, 9, TO_COMPUTER | STATUS_CMD, sh_status, az_status,
                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00
                      };
@@ -460,7 +467,7 @@ void updateAzimuthFSM()
             if (parking) {
                 parking = false;
 #ifdef HAS_SHUTTER
-                HC12.println("close");
+                clientUart.println("close");
 #endif
             }
 

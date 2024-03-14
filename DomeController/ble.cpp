@@ -54,48 +54,48 @@ void scan_callback(ble_gap_evt_adv_report_t* report)
  */
 void connect_callback(uint16_t conn_handle)
 {
-  Serial.println("Connected");
 
-  Serial.print("Dicovering Device Information ... ");
+  //Serial.println("Connected");
+  //Serial.print("Dicovering Device Information ... ");
   if ( clientDis.discover(conn_handle) )
   {
-    Serial.println("Found it");
+    //Serial.println("Found it");
     char buffer[32+1];
     
     // read and print out Manufacturer
     memset(buffer, 0, sizeof(buffer));
     if ( clientDis.getManufacturer(buffer, sizeof(buffer)) )
     {
-      Serial.print("Manufacturer: ");
-      Serial.println(buffer);
+      //Serial.print("Manufacturer: ");
+      //Serial.println(buffer);
     }
 
     // read and print out Model Number
     memset(buffer, 0, sizeof(buffer));
     if ( clientDis.getModel(buffer, sizeof(buffer)) )
     {
-      Serial.print("Model: ");
-      Serial.println(buffer);
+      //Serial.print("Model: ");
+      //Serial.println(buffer);
     }
 
-    Serial.println();
+    //Serial.println();
   }else
   {
-    Serial.println("Found NONE");
+    //Serial.println("Found NONE");
   }
 
   Serial.print("Discovering BLE Uart Service ... ");
   if ( clientUart.discover(conn_handle) )
   {
-    Serial.println("Found it");
+    //Serial.println("Found it");
 
-    Serial.println("Enable TXD's notify");
+    //Serial.println("Enable TXD's notify");
     clientUart.enableTXD();
 
-    Serial.println("Ready to receive from slave dome peripheral");
+    //Serial.println("Ready to receive from slave dome peripheral");
   }else
   {
-    Serial.println("Found NONE");
+    //Serial.println("Found NONE");
     
     // disconnect since we couldn't find bleuart service
     Bluefruit.disconnect(conn_handle);
@@ -112,7 +112,7 @@ void disconnect_callback(uint16_t conn_handle, uint8_t reason)
   (void) conn_handle;
   (void) reason;
   
-  Serial.print("Disconnected, reason = 0x"); Serial.println(reason, HEX);
+  //Serial.print("Disconnected, reason = 0x"); Serial.println(reason, HEX);
 }
 
 /**
@@ -122,14 +122,15 @@ void disconnect_callback(uint16_t conn_handle, uint8_t reason)
  */
 void bleuart_rx_callback(BLEClientUart& uart_svc)
 {
-  Serial.print("[RX]: ");
+  //Serial.print("[RX]: ");
   
   while ( uart_svc.available() )
   {
-    Serial.print( (char) uart_svc.read() );
+    char c = uart_svc.read();
+    //Serial.print(c);
   }
 
-  Serial.println();
+  //Serial.println();
 }
 
 void ble_setup(void) {
@@ -144,7 +145,7 @@ void ble_setup(void) {
 
   // Init BLE Central Uart Serivce
   clientUart.begin();
-  clientUart.setRxCallback(bleuart_rx_callback);
+//  clientUart.setRxCallback(bleuart_rx_callback);
 
   // Increase Blink rate to different from PrPh advertising mode
   Bluefruit.setConnLedInterval(250);

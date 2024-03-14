@@ -11,7 +11,7 @@
 #include "motor.h"
 
 #define DEFAULT_TIMEOUT 30000 // shutter timeout (in ms)
-
+extern Uart Serial ;
 // Shutter constructor.
 // motor: pointer to an instance of Motor
 // sw1: Limit switch (closed)
@@ -32,16 +32,16 @@ void Shutter::initState()
 {
     if (digitalRead(swClosed))
         state = ST_CLOSED;
-    else if (!digitalRead(swOpen))
+    else if (digitalRead(swOpen))
         state = ST_OPEN;
     else
         state = ST_ABORTED;
 }
 
 
-void Shutter::open() { nextAction = DO_OPEN; }
-void Shutter::close() { nextAction = DO_CLOSE; }
-void Shutter::abort() { nextAction = DO_ABORT; }
+void Shutter::open() { nextAction = DO_OPEN; Serial.println("DO_OPEN"); }
+void Shutter::close() { nextAction = DO_CLOSE;Serial.println("DO_CLOSE"); }
+void Shutter::abort() { nextAction = DO_ABORT;Serial.println("DO_ABORT"); }
 
 State Shutter::getState() { return state; }
 
@@ -62,12 +62,14 @@ void Shutter::update()
         if (action == DO_OPEN) {
             t0 = millis();
             state = ST_OPENING;
+            Serial.println("go to state OPENING");
         }
         break;
     case ST_OPEN:
         if (action == DO_CLOSE) {
             t0 = millis();
             state = ST_CLOSING;
+            Serial.println("go to state CLOSING");
         }
         break;
     case ST_ABORTED:
@@ -81,7 +83,9 @@ void Shutter::update()
         }
         break;
     case ST_OPENING:
-        if (!digitalRead(swOpen)) {
+
+        if (digitalRead(swOpen)) {
+            Serial.println("Open limit switch triggered");
             state = ST_OPEN;
             motor_stop();
         } else if (action == DO_ABORT || action == DO_CLOSE) {
@@ -90,10 +94,13 @@ void Shutter::update()
         } else if (millis() - t0 > runTimeout) {
             state = ST_ERROR;
             motor_stop();
+        } else {
+            motor_open();
         }
         break;
     case ST_CLOSING:
         if (digitalRead(swClosed)) {
+            Serial.println("Close limit  switch  trigered");
             state = ST_CLOSED;
             motor_stop();
         } else if (action == DO_ABORT || action == DO_OPEN) {
@@ -102,6 +109,8 @@ void Shutter::update()
         } else if (millis() - t0 > runTimeout) {
             state = ST_ERROR;
             motor_stop();
+        } else {
+          motor_close();
         }
         break;
     }

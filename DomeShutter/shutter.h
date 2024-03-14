@@ -20,6 +20,14 @@ enum State {
     ST_ERROR,
 };
 
+const char StateString[6][8] =
+{ "CLOSED",
+  "OPENING",
+  "OPEN",
+  "CLOSING",
+  "ABORTED",
+  "ERROR"
+};
 
 enum Action {
     DO_NONE,
@@ -39,9 +47,9 @@ public:
     void close();
     void abort();
     void update();
-    State getState();
-private:
     void initState();
+    State getState();
+private:    
     State state;
     Action nextAction;
     unsigned long runTimeout;

@@ -98,7 +98,14 @@ void cmdExit() {
 void cmdStatus() {
   lastCmdTime = millis();
   State st = domeStatus();
-  bleuart.write('0' + st);
+  char status_char = '0'+st;
+
+  Serial.print("cmdStatus(): st=");
+  Serial.print(st);
+  Serial.print("status_char = ");
+  Serial.println(status_char);
+  
+  bleuart.write(status_char);
 }
 
 void cmdGetVBat() {

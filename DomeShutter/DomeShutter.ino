@@ -28,6 +28,7 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #include <bluefruit.h>
 #include "SerialCommand.h"
 #include "shutter.h"
+#include "command.h"
 #include "ble.h"
 
 // Pin definitions
@@ -48,27 +49,10 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 Shutter shutter(PIN_LIMIT_SWITCH_CLOSE, PIN_LIMIT_SWITCH_OPEN, SHUTTER_TIMEOUT);
 
 SerialCommand sCmd;
-unsigned long lastCmdTime = 0;
 
 extern BLEUart bleuart;
 
-// Return dome status by combining shutter and flap statuses
-State domeStatus() {
-  State sst = shutter.getState();
-
-  if (sst == ST_ERROR)
-    return ST_ERROR;
-  else if (sst == ST_OPENING)
-    return ST_OPENING;
-  else if (sst == ST_CLOSING)
-    return ST_CLOSING;
-  else if (sst == ST_OPEN)
-    return ST_OPEN;
-  else if (sst == ST_CLOSED)
-    return ST_CLOSED;
-
-  return ST_ABORTED;
-}
+unsigned long lastCmdTime = 0;
 
 void cmdOpenShutter() {
   lastCmdTime = millis();
@@ -96,25 +80,37 @@ void cmdExit() {
 }
 
 void cmdStatus() {
+  char bleMsg[3];
+  char status_char;
+
   lastCmdTime = millis();
-  State st = domeStatus();
-  char status_char = '0'+st;
+  State st = shutter.getState();
+  status_char = '0' + st;
+
+
+  bleMsg[0] = 's';
+  bleMsg[1] = status_char;
+  bleMsg[2] = 0;
 
   Serial.print("cmdStatus(): st=");
   Serial.print(st);
   Serial.print("status_char = ");
   Serial.println(status_char);
-  
-  bleuart.write(status_char);
+
+  bleuart.write(bleMsg);
 }
 
 void cmdGetVBat() {
-  lastCmdTime = millis();
-  int val = analogRead(VBAT_PIN);
   char buffer[8];
+  int val;
+
+  lastCmdTime = millis();
+  val = analogRead(VBAT_PIN);
+
   sprintf(buffer, "v%04d", val);
   bleuart.write(buffer);
 }
+
 
 void setup() {
   pinMode(LED_ERR, OUTPUT);
@@ -144,18 +140,18 @@ void setup() {
   digitalWrite(LED_ERR, HIGH);
   ble_setup();  // for BLE exchange with the master board
   delay(100);
+  cmdStatus();  // send the status thru BLE
   digitalWrite(LED_ERR, LOW);
 }
 
 
 void display_status(void) {
-
   static int divider_display = 0;
 
-  delay(1);
   divider_display++;
   if (divider_display == 1000) {
     divider_display = 0;
+
     int state = shutter.getState();
     Serial.print("shutter state =");
     Serial.print(StateString[state]);
@@ -177,23 +173,55 @@ void display_status(void) {
   }
 }
 
-void loop() {
-  if (digitalRead(PIN_BUTTON_OPEN)) {
-    Serial.print("Button open pressed");
+void periodic_status_cmd(void) {
+  static int divider = 0;
+
+  divider++;
+  if (divider == 1200) {
+    divider = 0;
+    cmdStatus();
+  }
+}
+
+void check_buttons(void) {
+  static uint8_t previous_state_button_open = 0;
+  static uint8_t previous_state_button_close = 0;
+
+  if (digitalRead(PIN_BUTTON_OPEN) && (previous_state_button_open == 0)) {
+    previous_state_button_open = 1;
+    Serial.print("Open button pressed");
     shutter.open();
   }
 
-  if (digitalRead(PIN_BUTTON_CLOSE)) {
-    Serial.print("Button close pressed");
+  if (!digitalRead(PIN_BUTTON_OPEN) && (previous_state_button_open == 1)) {
+    Serial.print("Open button released");
+    previous_state_button_open = 0;
+    shutter.abort();
+  }
+
+  if (digitalRead(PIN_BUTTON_CLOSE) && (previous_state_button_close == 0)) {
+    previous_state_button_close = 1;
+    Serial.print("Close button pressed");
     shutter.close();
   }
 
+  if (!digitalRead(PIN_BUTTON_CLOSE) && (previous_state_button_close == 1)) {
+    Serial.print("Close button released");
+    shutter.abort();
+    previous_state_button_close = 0;
+  }
+}
+
+void loop() {
+
+  check_buttons();
   display_status();
+  //periodic_status_cmd();
 
   // Close the dome if time from last command > COMMAND_TIMEOUT
   if ((lastCmdTime > 0) && ((millis() - lastCmdTime) > COMMAND_TIMEOUT)) {
     Serial.println("Timeout last command, try to close dome shutter");
-    if (domeStatus() != ST_CLOSED) {
+    if (shutter.getState() != ST_CLOSED) {
       lastCmdTime = 0;
       shutter.close();
     }
@@ -206,4 +234,6 @@ void loop() {
 
   shutter.update();
   sCmd.readSerial(&bleuart);
+
+  delay(1);
 }

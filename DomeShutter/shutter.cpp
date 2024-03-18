@@ -9,6 +9,7 @@
 #include <Arduino.h>
 #include "shutter.h"
 #include "motor.h"
+#include "command.h"
 
 #define DEFAULT_TIMEOUT 30000 // shutter timeout (in ms)
 extern Uart Serial ;
@@ -62,6 +63,7 @@ void Shutter::update()
         if (action == DO_OPEN) {
             t0 = millis();
             state = ST_OPENING;
+            cmdStatus();
             Serial.println("go to state OPENING");
         }
         break;
@@ -69,17 +71,21 @@ void Shutter::update()
         if (action == DO_CLOSE) {
             t0 = millis();
             state = ST_CLOSING;
+            cmdStatus();
             Serial.println("go to state CLOSING");
         }
         break;
     case ST_ABORTED:
     case ST_ERROR:
+        initState();  // check limit switch on case we can get status...
         if (action == DO_OPEN) {
             t0 = millis();
             state = ST_OPENING;
+            cmdStatus();
         } else if (action == DO_CLOSE) {
             t0 = millis();
             state = ST_CLOSING;
+            cmdStatus();
         }
         break;
     case ST_OPENING:
@@ -88,12 +94,15 @@ void Shutter::update()
             Serial.println("Open limit switch triggered");
             state = ST_OPEN;
             motor_stop();
+            cmdStatus();
         } else if (action == DO_ABORT || action == DO_CLOSE) {
             state = ST_ABORTED;
             motor_stop();
+            cmdStatus();
         } else if (millis() - t0 > runTimeout) {
             state = ST_ERROR;
             motor_stop();
+            cmdStatus();
         } else {
             motor_open();
         }
@@ -103,12 +112,15 @@ void Shutter::update()
             Serial.println("Close limit  switch  trigered");
             state = ST_CLOSED;
             motor_stop();
+            cmdStatus();
         } else if (action == DO_ABORT || action == DO_OPEN) {
             state = ST_ABORTED;
             motor_stop();
+            cmdStatus();
         } else if (millis() - t0 > runTimeout) {
             state = ST_ERROR;
             motor_stop();
+            cmdStatus();
         } else {
           motor_close();
         }

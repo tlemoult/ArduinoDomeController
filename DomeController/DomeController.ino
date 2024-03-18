@@ -28,7 +28,7 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #include <bluefruit.h>
 #include "ble.h"
 #include "serial_command.h"
-
+#include "shutterStatus.h"
 
 
 // Configuration
@@ -59,9 +59,6 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // Message Destination
 #define TO_MAXDOME  0x00
 #define TO_COMPUTER 0x80
-
-#define VBAT_FACTOR (5.0/1024.0)
-#define VBAT_OFFSET 10.55
 
 #define BAUDRATE 19200
 
@@ -118,15 +115,6 @@ enum MDAzimuthStatus {
     AS_ERROR
 };
 
-// MaxDome II shutter status
-enum ShutterStatus {
-    SS_CLOSED = 0,
-    SS_OPENING,
-    SS_OPEN,
-    SS_CLOSING,
-    SS_ABORTED,
-    SS_ERROR
-};
 
 extern BLEClientUart clientUart; // bleuart client
 SerialCommand sCmd;
@@ -218,66 +206,6 @@ inline void stopAzimuth()
     digitalWrite(MOTOR_CCW, LOW);
 }
 
-float getShutterVBat()
-{
-    int adc = 0;
-
-#ifdef HAS_SHUTTER
-    char buffer[5];
-
-    clientUart.flush();
-    for (int i = 0; i < 4; i++) {
-        clientUart.println("vbat");
-        delay(100);
-
-        if (clientUart.read() == 'v') {
-            for (int j = 0; j < 4; j++) {
-                buffer[j] = clientUart.read();
-            }
-
-            buffer[4] = 0;
-            adc = atoi(buffer);
-            break;
-        }
-    }
-#endif
-
-    // Convert ADC reading to voltage
-    return (float)adc * VBAT_FACTOR + VBAT_OFFSET;
-}
-
-ShutterStatus getShutterStatus()
-{
-    ShutterStatus st;
-
-#ifdef HAS_SHUTTER
-    st = SS_ABORTED;
-
-    uint8_t receive_buffer[100];
-
-    // Flush buffer
-    clientUart.readBytes(receive_buffer,100);
-
-    size_t nb_bytes;
-    for (int i = 0; i < 4; i++) 
-    {
-        clientUart.println("stat");
-        delay(300);
-
-        nb_bytes = clientUart.read(receive_buffer,100);
-        char c = (char) receive_buffer[0];
-
-        if ((c >= '0') && (c <= ('0' + SS_ERROR)) ) {
-              st = (ShutterStatus)(c - '0');
-              break;
-        }
-
-    }
-#endif
-    return st;
-}
-
-
 void cmdAbort(uint8_t *cmd)
 {
 #ifdef HAS_SHUTTER
@@ -365,7 +293,7 @@ void cmdStatus(uint8_t *cmd)
             az_status = AS_MOVING_CCW;
     }
 
-    uint8_t sh_status = (uint8_t)getShutterStatus();
+    uint8_t sh_status = (uint8_t)shutterStatus_GetStatus();
     // uint8_t sh_status = (uint8_t)2;   // use for forcing status
     uint8_t resp[] = {START, 9, TO_COMPUTER | STATUS_CMD, sh_status, az_status,
                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -404,7 +332,7 @@ void cmdVBat(uint8_t *cmd)
 {
     uint8_t resp[] = {START, 4, TO_COMPUTER | VBAT_CMD, 0x00, 0x00, 0x00};
 
-    int vbat = getShutterVBat() * 100;
+    int vbat = shutterStatus_GetVbat() * 100;
     intToBytes(vbat, resp + 3);
 
     sCmd.sendResponse(resp, 6);
@@ -612,6 +540,10 @@ void read_buttons()
     prev_ccw_button = ccw_button;
 }
 
+void send_periodic_status(void) 
+{
+  
+}
 
 void loop()
 {

@@ -28,13 +28,16 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #include <bluefruit.h>
 #include "SerialCommand.h"
 #include "shutter.h"
+#include "motor.h"
 #include "command.h"
+#include "power.h"
 #include "ble.h"
 
 // Pin definitions
 #define LED_ERR 13                // error LED
 #define PIN_LIMIT_SWITCH_CLOSE 7  // shutter closed switch (NC)
 #define PIN_LIMIT_SWITCH_OPEN 15  // shutter open switch (NO)
+
 
 #define VBAT_PIN A1  // 12V input battery voltage reading
 
@@ -219,6 +222,7 @@ void loop() {
   //periodic_status_cmd();
 
   // Close the dome if time from last command > COMMAND_TIMEOUT
+  /*
   if ((lastCmdTime > 0) && ((millis() - lastCmdTime) > COMMAND_TIMEOUT)) {
     Serial.println("Timeout last command, try to close dome shutter");
     if (shutter.getState() != ST_CLOSED) {
@@ -228,11 +232,11 @@ void loop() {
   }
 
 
-
   int err = (shutter.getState() == ST_ERROR);
   digitalWrite(LED_ERR, err);
-
+*/
   shutter.update();
+  check_power_sleep();
   sCmd.readSerial(&bleuart);
 
   delay(1);

@@ -1,5 +1,7 @@
-Work in progress.... Just forked, still not functionnal.
-========================================================
+Work in progress.... Experimental
+==================================
+I test on my desk the main controler, and i build a breakboard slave dome prototype.
+Software look working. It's need some more tests.
 
 ArduinoDomeController
 =====================
@@ -75,20 +77,24 @@ a 12v lead-acid battery. The battery can be charged with
  * a trickle charger wich is connected to the battery when the dome is
    in the home position using two brushes.
 
-The shutter controller communicates with the main board by means of UART over BLE
+A high efficiency DC/DC provide 5V DC form 12V battery.
+
+The shutter controller communicates with the main board thru UART over BLE
 
  ![](images/blueFruit_nRF52832.jpg)
 
-Shutter motor or flap motors can be controlled by any means like:
-* For DCmotors [Monster Moto Shield](https://www.sparkfun.com/products/10182).
+Switched power supply of the motor:
+An open collector @ 12V drive a external 12V power relay. The power contact of this relay supplies an inverter which outputs 230V AC.
+The 230V AC is used to power a variable speed drive for a three-phase asynchronous motor.
+The speed controller is operated through its digital inputs for forward and reverse motion.
+These inputs are activated by 2 relays integrated into the slave controller board.
 
-Five limit switches are used. Pin numbers are defined in [DomeShutter.ino](DomeShutter/DomeShutter.ino).
 
+Two limit switches are used. 
  * Shutter fully closed
  * Shutter fully open
- * Flap closed
- * Flap fully open
- * Flap and shutter mechanical interference
 
-The 4-button keyboard in the shutter controller 
+There is 2 button to manually command openning and close of the shutter.
+
+There is extension port with 6 free I/O of the microcontroler for future extension. Like an driver for a 12V motor.
 

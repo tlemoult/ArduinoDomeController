@@ -25,12 +25,14 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 *******************************************************************************/
-
+#include <bluefruit.h>
+#include "ble.h"
 #include "serial_command.h"
+#include "shutterStatus.h"
 
 
 // Configuration
-//#define HAS_SHUTTER     // Uncomment if the shutter controller is available
+#define HAS_SHUTTER     // Uncomment if the shutter controller is available
 #define USE_BUTTONS   // Uncomment if you want to move the dome with push buttons
 
 #define AZ_TIMEOUT      30000   // Azimuth movement timeout (in ms)
@@ -57,9 +59,6 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // Message Destination
 #define TO_MAXDOME  0x00
 #define TO_COMPUTER 0x80
-
-#define VBAT_FACTOR (5.0/1024.0)
-#define VBAT_OFFSET 10.55
 
 #define BAUDRATE 19200
 
@@ -116,17 +115,8 @@ enum MDAzimuthStatus {
     AS_ERROR
 };
 
-// MaxDome II shutter status
-enum ShutterStatus {
-    SS_CLOSED = 0,
-    SS_OPENING,
-    SS_OPEN,
-    SS_CLOSING,
-    SS_ABORTED,
-    SS_ERROR
-};
 
-
+extern BLEClientUart clientUart; // bleuart client
 SerialCommand sCmd;
 
 
@@ -216,64 +206,10 @@ inline void stopAzimuth()
     digitalWrite(MOTOR_CCW, LOW);
 }
 
-float getShutterVBat()
-{
-    int adc = 0;
-
-#ifdef HAS_SHUTTER
-    char buffer[5];
-
-    HC12.flush();
-    for (int i = 0; i < 4; i++) {
-        HC12.println("vbat");
-        delay(100);
-
-        if (HC12.read() == 'v') {
-            for (int j = 0; j < 4; j++) {
-                buffer[j] = HC12.read();
-            }
-
-            buffer[4] = 0;
-            adc = atoi(buffer);
-            break;
-        }
-    }
-#endif
-
-    // Convert ADC reading to voltage
-    return (float)adc * VBAT_FACTOR + VBAT_OFFSET;
-}
-
-ShutterStatus getShutterStatus()
-{
-    ShutterStatus st = SS_OPEN;
-
-#ifdef HAS_SHUTTER
-    st = SS_ERROR;
-    HC12.flush();
-    for (int i = 0; i < 4; i++) {
-        HC12.println("stat");
-        delay(100);
-
-        char c = 0;
-        while (HC12.available() > 0) {
-            c = HC12.read();
-        }
-
-        if (c >= '0' && c <= ('0' + SS_ERROR)) {
-            st = (ShutterStatus)(c - '0');
-            break;
-        }
-    }
-#endif
-    return st;
-}
-
-
 void cmdAbort(uint8_t *cmd)
 {
 #ifdef HAS_SHUTTER
-    HC12.println("abort");  // abort shutter movement
+    clientUart.println("abort");  // abort shutter movement
 #endif
 
     az_event = EVT_ABORT;
@@ -317,22 +253,22 @@ void cmdShutterCommand(uint8_t *cmd)
 #ifdef HAS_SHUTTER
     switch(cmd[3]) {
     case OPEN_SHUTTER:
-        HC12.println("open");
+        clientUart.println("open");
         break;
     case OPEN_UPPER_ONLY_SHUTTER:
-        HC12.println("open1");
+        clientUart.println("open1");
         break;
     case CLOSE_SHUTTER:
         if (park_on_shutter)
             parkDome();
         else
-            HC12.println("close");
+            clientUart.println("close");
         break;
     case EXIT_SHUTTER:
-        HC12.println("exit");
+        clientUart.println("exit");
         break;
     case ABORT_SHUTTER:
-        HC12.println("abort");
+        clientUart.println("abort");
         break;
     }
 #endif
@@ -357,7 +293,8 @@ void cmdStatus(uint8_t *cmd)
             az_status = AS_MOVING_CCW;
     }
 
-    uint8_t sh_status = (uint8_t)getShutterStatus();
+    uint8_t sh_status = (uint8_t)shutterStatus_GetStatus();
+    // uint8_t sh_status = (uint8_t)2;   // use for forcing status
     uint8_t resp[] = {START, 9, TO_COMPUTER | STATUS_CMD, sh_status, az_status,
                       0x00, 0x00, 0x00, 0x00, 0x00, 0x00
                      };
@@ -395,7 +332,7 @@ void cmdVBat(uint8_t *cmd)
 {
     uint8_t resp[] = {START, 4, TO_COMPUTER | VBAT_CMD, 0x00, 0x00, 0x00};
 
-    int vbat = getShutterVBat() * 100;
+    int vbat = shutterStatus_GetVbat() * 100;
     intToBytes(vbat, resp + 3);
 
     sCmd.sendResponse(resp, 6);
@@ -458,7 +395,7 @@ void updateAzimuthFSM()
             if (parking) {
                 parking = false;
 #ifdef HAS_SHUTTER
-                HC12.println("close");
+                clientUart.println("close");
 #endif
             }
 
@@ -568,6 +505,8 @@ void setup()
 
     Serial.begin(19200);
 
+    ble_setup();
+
 }
 
 // move the motor when the buttons are pressed
@@ -601,6 +540,10 @@ void read_buttons()
     prev_ccw_button = ccw_button;
 }
 
+void send_periodic_status(void) 
+{
+  
+}
 
 void loop()
 {

@@ -8,10 +8,12 @@ An astronomical observatory dome controller based on two Arduino boards ADAFruit
 Each is hosted on an custom home made PCBA motherboard. 
 
  * The main controller (DomeController)
- * The shutter controller (DomeShutter)
- * 
 ![](images/3Dmainboard.png)
 
+ * The shutter controller (DomeShutter)
+![](images/3Dslaveboard.png)
+
+ * architecture 
  ![](images/Dome-controler-arch.png)
 
 

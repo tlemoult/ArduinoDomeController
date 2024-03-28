@@ -43,4 +43,6 @@ private:
     int bufPos;
 };
 
+extern SerialCommand sCmd; 
+
 #endif

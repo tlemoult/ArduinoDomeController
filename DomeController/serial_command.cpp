@@ -9,6 +9,7 @@
 #include <Arduino.h>
 #include "serial_command.h"
 
+SerialCommand sCmd; 
 
 SerialCommand::SerialCommand()
 {

@@ -46,6 +46,8 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #define HOME_SENSOR 16  // Home sensor (active high)
 #define BUTTON_CW   12  // CW movement button (active high)
 #define BUTTON_CCW  29  // CCW movement button (active high)
+#define BUTTON_OPEN_SHUTTER 14    // OPEN shutter
+#define BUTTON_CLOSE_SHUTTER  13  // CLOSE shutter
 
 // motor pins 
 #define MOTOR_CW 30      // Move motor clockwise
@@ -478,12 +480,15 @@ void setup()
     pinMode(HOME_SENSOR, INPUT);
     pinMode(BUTTON_CW, INPUT);
     pinMode(BUTTON_CCW, INPUT);
+    pinMode(BUTTON_OPEN_SHUTTER,INPUT);
+    pinMode(BUTTON_CLOSE_SHUTTER,INPUT);
 
     pinMode(MOTOR_JOG, OUTPUT);
     pinMode(MOTOR_CW, OUTPUT);
     pinMode(MOTOR_CCW, OUTPUT);
     digitalWrite(MOTOR_CW, LOW);
     digitalWrite(MOTOR_CCW, LOW);
+    digitalWrite(MOTOR_JOG,LOW);
 
     pinMode(DEBUG_1,OUTPUT);
     digitalWrite(DEBUG_1,LOW);
@@ -509,8 +514,8 @@ void setup()
 
 }
 
-// move the motor when the buttons are pressed
-void read_buttons()
+// rotate the dome when ccw or cw buttons are pressed
+void read_buttons_rotate()
 {
     static int prev_cw_button = 0, prev_ccw_button = 0;
     int cw_button = digitalRead(BUTTON_CW);
@@ -540,6 +545,41 @@ void read_buttons()
     prev_ccw_button = ccw_button;
 }
 
+// open close the dome when open_chutter or close_shutter are pressed
+void read_buttons_open_close()
+{
+  static int prev_open_button = 0, prev_close_button = 0;
+  int open_button = digitalRead(BUTTON_OPEN_SHUTTER);
+  int close_button = digitalRead(BUTTON_CLOSE_SHUTTER);
+  uint8_t cmd[4];
+
+  if (open_button != prev_open_button) {
+        if (open_button) {
+            cmd[3] = OPEN_SHUTTER;
+            cmdShutterCommand(cmd);
+        }
+        else {
+            cmd[3] = ABORT_SHUTTER;
+            cmdShutterCommand(cmd);
+        }
+    }
+    else if (close_button != prev_close_button) {
+        if (close_button) {
+            cmd[3] = CLOSE_SHUTTER;
+            cmdShutterCommand(cmd);
+        }
+        else {
+            cmd[3] = ABORT_SHUTTER;
+            cmdShutterCommand(cmd);
+        }
+    }
+    prev_open_button = open_button;
+    prev_close_button = close_button;
+}
+
+
+
+
 void send_periodic_status(void) 
 {
   
@@ -549,7 +589,8 @@ void loop()
 {
     sCmd.readSerial();
     updateAzimuthFSM();
-    read_buttons();
+    read_buttons_rotate();
+    read_buttons_open_close();
 
     // store detected home position
     if (digitalRead(HOME_SENSOR)) {

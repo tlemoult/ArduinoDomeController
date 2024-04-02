@@ -10,3 +10,5 @@
 #define ENCODER_PRE_DIV (5)  // number of ticks subdivision
 #define ENCODER_TICKS_PER_TURN (600)  // for a complete dome revolution
 #define HOME_POSITION (0)
+
+#define PING_SHUTTER_MILLI (2000)  // ping period with shutter

@@ -34,6 +34,7 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #include "shutterStatus.h"
 #include "encoder.h"
 #include "buttons.h"
+#include "config.h"
 
 void serialEvent() {
   sCmd.readSerial();
@@ -82,10 +83,25 @@ void setup() {
   ble_setup();
 }
 
+void ping_slave_shutter(void) {
+  static unsigned long last_ping = 0;
+  unsigned long now_milli;
+
+  now_milli = millis();
+
+  if (now_milli-last_ping>PING_SHUTTER_MILLI) 
+   {
+    last_ping = now_milli;
+    clientUart.println("ping");
+  } 
+
+}
+
 
 void loop() {
   updateAzimuthFSM();
   read_buttons_rotate();
   read_buttons_open_close();
   check_home_sensor();
+  ping_slave_shutter();
 }

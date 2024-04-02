@@ -62,6 +62,7 @@ void setup() {
   sCmd.addCommand("exit", cmdExit);
   sCmd.addCommand("stat", cmdStatus);
   sCmd.addCommand("vbat", cmdGetVBat);
+  sCmd.addCommand("ping", cmdPing);
 
   digitalWrite(LED_ERR, HIGH);
   ble_setup();  // for BLE exchange with the master board
@@ -144,8 +145,7 @@ void loop() {
   display_status();
   //periodic_status_cmd();
 
-  // Close the dome if time from last command > COMMAND_TIMEOUT
-  /*
+  // Close the dome if time from last command > COMMAND_TIMEOUT  
   if ((lastCmdTime > 0) && ((millis() - lastCmdTime) > COMMAND_TIMEOUT)) {
     Serial.println("Timeout last command, try to close dome shutter");
     if (shutter.getState() != ST_CLOSED) {
@@ -154,10 +154,6 @@ void loop() {
     }
   }
 
-
-  int err = (shutter.getState() == ST_ERROR);
-  digitalWrite(LED_ERR, err);
-*/
   shutter.update();
   check_power_sleep();
   sCmd.readSerial(&bleuart);

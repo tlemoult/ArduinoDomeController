@@ -64,3 +64,7 @@ void cmdGetVBat() {
   bleuart.write(buffer);
 }
 
+void cmdPing() {
+  lastCmdTime = millis();
+  Serial.println("cmdPing()");
+}

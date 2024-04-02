@@ -10,5 +10,6 @@ void cmdAbort();
 void cmdExit();
 void cmdStatus();
 void cmdGetVBat();
+void cmdPing();
 
 #endif

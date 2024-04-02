@@ -8,8 +8,12 @@
 
 #include <Arduino.h>
 #include "shutter.h"
+#include "pins.h"
+#include "config.h"
 #include "motor.h"
 #include "command.h"
+
+Shutter shutter(PIN_LIMIT_SWITCH_CLOSE, PIN_LIMIT_SWITCH_OPEN, SHUTTER_TIMEOUT);
 
 #define DEFAULT_TIMEOUT 30000 // shutter timeout (in ms)
 extern Uart Serial ;

@@ -74,4 +74,6 @@ class SerialCommand {
     char *last;                         // State variable used by strtok_r during processing
 };
 
+extern SerialCommand sCmd;
+
 #endif //SerialCommand_h

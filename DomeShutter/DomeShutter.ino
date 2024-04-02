@@ -32,88 +32,11 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #include "command.h"
 #include "power.h"
 #include "ble.h"
+#include "pins.h"
+#include "config.h"
 
-// Pin definitions
-#define LED_ERR 13                // error LED
-#define PIN_LIMIT_SWITCH_CLOSE 7  // shutter closed switch (NC)
-#define PIN_LIMIT_SWITCH_OPEN 15  // shutter open switch (NO)
-
-
-#define VBAT_PIN A1  // 12V input battery voltage reading
-
-#define PIN_BUTTON_OPEN 29
-#define PIN_BUTTON_CLOSE 28
-
-// Timeouts in ms
-#define COMMAND_TIMEOUT 60000  // Max. time from last command
-#define SHUTTER_TIMEOUT 75000  // Max. time the shutter takes to open/close
-#define FLAP_TIMEOUT 15000     // Max. time the flap takes to open/close
-
-Shutter shutter(PIN_LIMIT_SWITCH_CLOSE, PIN_LIMIT_SWITCH_OPEN, SHUTTER_TIMEOUT);
-
-SerialCommand sCmd;
-
-extern BLEUart bleuart;
 
 unsigned long lastCmdTime = 0;
-
-void cmdOpenShutter() {
-  lastCmdTime = millis();
-  shutter.open();
-}
-
-void cmdOpenBoth() {
-  lastCmdTime = millis();
-  shutter.open();
-}
-
-void cmdClose() {
-  lastCmdTime = millis();
-  shutter.close();
-}
-
-void cmdAbort() {
-  lastCmdTime = millis();
-  shutter.abort();
-}
-
-void cmdExit() {
-  lastCmdTime = 0;
-  shutter.close();
-}
-
-void cmdStatus() {
-  char bleMsg[3];
-  char status_char;
-
-  lastCmdTime = millis();
-  State st = shutter.getState();
-  status_char = '0' + st;
-
-
-  bleMsg[0] = 's';
-  bleMsg[1] = status_char;
-  bleMsg[2] = 0;
-
-  Serial.print("cmdStatus(): st=");
-  Serial.print(st);
-  Serial.print("status_char = ");
-  Serial.println(status_char);
-
-  bleuart.write(bleMsg);
-}
-
-void cmdGetVBat() {
-  char buffer[8];
-  int val;
-
-  lastCmdTime = millis();
-  val = analogRead(VBAT_PIN);
-
-  sprintf(buffer, "v%04d", val);
-  bleuart.write(buffer);
-}
-
 
 void setup() {
   pinMode(LED_ERR, OUTPUT);

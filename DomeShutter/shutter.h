@@ -57,4 +57,6 @@ private:
     int swOpen;
 };
 
+extern Shutter shutter;
+
 #endif

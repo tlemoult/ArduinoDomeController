@@ -148,8 +148,8 @@ void loop() {
   // Close the dome if time from last command > COMMAND_TIMEOUT  
   if ((lastCmdTime > 0) && ((millis() - lastCmdTime) > COMMAND_TIMEOUT)) {
     Serial.println("Timeout last command, try to close dome shutter");
+    lastCmdTime = millis();
     if (shutter.getState() != ST_CLOSED) {
-      lastCmdTime = 0;
       shutter.close();
     }
   }

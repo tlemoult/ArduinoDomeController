@@ -6,7 +6,7 @@ bool is_power = 0;
 
 void init_power(void) {
   pinMode(PIN_MOTOR_POWER, OUTPUT);
-  set_power();
+  clear_power();
 }
 
 void set_power(void)

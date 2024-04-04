@@ -6,7 +6,7 @@
 #define PIN_LIMIT_SWITCH_CLOSE 7  // shutter closed switch (NC)
 #define PIN_LIMIT_SWITCH_OPEN 15  // shutter open switch (NO)
 
-
+#define PIN_3V3_POWER_AO 30
 #define VBAT_PIN A1  // 12V input battery voltage reading
 
 #define PIN_BUTTON_OPEN 29

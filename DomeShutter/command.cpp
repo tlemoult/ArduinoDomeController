@@ -2,6 +2,7 @@
 #include "shutter.h"
 #include "ble.h"
 #include "pins.h"
+#include "config.h"
 #include "command.h"
 
 void cmdOpenShutter() {
@@ -53,13 +54,18 @@ void cmdStatus() {
 void cmdGetVBat() {
   char buffer[8];
   int val;
+  float volt_value;
 
   lastCmdTime = millis();
   val = analogRead(VBAT_PIN);
+  volt_value = val * 4.9 *3.6 /1024.0+0.2;
 
   sprintf(buffer, "v%04d", val);
   Serial.print("cmdGetVbat(): vbat=");
-  Serial.println(val);
+  Serial.print(val);
+  Serial.print(" ADU = ");
+  Serial.print(volt_value);
+  Serial.println(" Volts.");
 
   bleuart.write(buffer);
 }
@@ -67,4 +73,9 @@ void cmdGetVBat() {
 void cmdPing() {
   lastCmdTime = millis();
   Serial.println("cmdPing()");
+  
+  #ifdef _debug_vbat_ping
+    cmdGetVBat();
+  #endif
+
 }

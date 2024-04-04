@@ -45,6 +45,9 @@ void setup() {
   pinMode(PIN_LIMIT_SWITCH_CLOSE, INPUT);
   pinMode(PIN_LIMIT_SWITCH_OPEN, INPUT);
 
+  pinMode(PIN_3V3_POWER_AO,OUTPUT);
+  digitalWrite(PIN_3V3_POWER_AO,HIGH);
+
   motor_setup();
 
   Serial.begin(115200);  // for console message

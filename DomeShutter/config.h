@@ -6,4 +6,6 @@
 #define SHUTTER_TIMEOUT 75000  // Max. time the shutter takes to open/close
 #define FLAP_TIMEOUT 15000     // Max. time the flap takes to open/close
 
+//#define _debug_vbat_ping
+
 #endif

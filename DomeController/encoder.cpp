@@ -13,7 +13,7 @@ bool home_reached = false;
 void encoderISR() {
   static uint16_t encoder_fine_pos = 0;
 
-  if (digitalRead(ENCODER2)) {
+  if (digitalRead(ENCODER2) == 0) {
     // decrement direction
     if (encoder_fine_pos == 0) {
       encoder_fine_pos = encoder_pre_divider - 1;

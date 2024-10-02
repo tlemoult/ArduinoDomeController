@@ -2,14 +2,18 @@
 #define _h_pins_
 
 // Pin definitions
-#define LED_ERR 13                // error LED
-#define PIN_LIMIT_SWITCH_CLOSE 7  // shutter closed switch (NC)
-#define PIN_LIMIT_SWITCH_OPEN 15  // shutter open switch (NO)
+#define LED_ERR 8                // error LED
+#define PIN_LIMIT_SWITCH_CLOSE 11  // shutter closed switch (NC)
+#define PIN_LIMIT_SWITCH_OPEN 12  // shutter open switch (NO)
 
-#define PIN_3V3_POWER_AO 30
+#define PIN_3V3_POWER_AO 6
 #define VBAT_PIN A1  // 12V input battery voltage reading
 
-#define PIN_BUTTON_OPEN 29
-#define PIN_BUTTON_CLOSE 28
+#define PIN_BUTTON_OPEN 19
+#define PIN_BUTTON_CLOSE 18
+
+#define PIN_MOTOR_POWER 13
+#define PIN_MOTOR_OPEN  23
+#define PIN_MOTOR_CLOSE 22
 
 #endif

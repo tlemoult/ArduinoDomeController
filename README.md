@@ -51,19 +51,14 @@ of ADAfruit Arduino ADA Fruit package.
 
 In a windows installation arduino look into this file the following modification:
 into this file the following modification:
- * windows OS: ``C:\Users\youruser\AppData\Local\Arduino15\packages\adafruit\hardware\nrf52\1.6.0\variants\feather_nrf52832\variant.h``
- * linux OS: ``~/.arduino15/packages/adafruit/hardware/nrf52/1.6.0/variants/feather_nrf52832/variant.h``
+ * windows OS: ``C:\Users\youruser\AppData\Local\Arduino15\packages\adafruit\hardware\nrf52\1.6.1\variants\feather_nrf52840\variant.h``
+ * linux OS: ``~/.arduino15/packages/adafruit/hardware/nrf52/1.6.1/variants/feather_nrf52840/variant.h``
 
-For USB
-```
-#define PIN_SERIAL_RX       (8)
-#define PIN_SERIAL_TX       (6)
-```
 
 For RS232
 ```
-#define PIN_SERIAL_RX       (3)
-#define PIN_SERIAL_TX       (2)
+#define PIN_SERIAL1_RX       (15)
+#define PIN_SERIAL1_TX       (14)
 ```
 
 

@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "motor.h"
 #include "power.h"
+#include "pins.h"
 
 void motor_open(void)
 {

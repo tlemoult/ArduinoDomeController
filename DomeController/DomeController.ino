@@ -36,9 +36,6 @@ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #include "buttons.h"
 #include "config.h"
 
-void serialEvent() {
-  sCmd.readSerial();
-}
 
 void setup() {
 
@@ -78,7 +75,14 @@ void setup() {
 
   attachInterrupt(digitalPinToInterrupt(ENCODER1), encoderISR, RISING);
 
-  Serial.begin(BAUDRATE);
+  // RS232 port, PC controle Maxdome protocol
+  Serial1.begin(BAUDRATE);
+
+  // USB CDC, for logs
+  // Open serial communications and wait for port to open:
+  Serial.begin(115200);
+  while ( !Serial ) delay(10);   // for nrf52840 with native usb
+  Serial.println("Starting Dome controler.");
 
   ble_setup();
 }
@@ -104,4 +108,5 @@ void loop() {
   read_buttons_open_close();
   check_home_sensor();
   ping_slave_shutter();
+  sCmd.readSerial();
 }

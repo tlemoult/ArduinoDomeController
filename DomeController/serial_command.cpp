@@ -43,8 +43,8 @@ int SerialCommand::addCommand(const uint8_t id, uint8_t size, cbFunction functio
 
 void SerialCommand::readSerial()
 {
-    while (Serial.available()) {
-        char c = Serial.read();
+    while (Serial1.available()) {
+        char c = Serial1.read();
 
         switch (bufPos) {
         case 0:
@@ -90,6 +90,6 @@ void SerialCommand::sendResponse(uint8_t *cmd, uint8_t length)
     cmd[length - 1] = getCRC(cmd, length - 2);
 
     for (int i = 0; i < length; i++) {
-        Serial.write(cmd[i]);
+        Serial1.write(cmd[i]);
     }
 }

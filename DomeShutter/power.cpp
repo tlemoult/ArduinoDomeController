@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "power.h"
+#include "pins.h"
 
 unsigned long time_of_power_start;
 bool is_power = 0;

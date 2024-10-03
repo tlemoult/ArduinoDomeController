@@ -15,8 +15,10 @@ BLEClientUart clientUart;  // bleuart client
  * @param report Structural advertising data
  */
 void scan_callback(ble_gap_evt_adv_report_t* report) {
-  uint8_t target_adress1[6] = { 0x62, 0xB0, 0xEB, 0x66, 0x65, 0xFA };  // Chelles Obs
-  uint8_t target_adress2[6] = { 0xDB, 0xB6, 0x18, 0x93, 0x54, 0x94 };  // Rigado
+  
+  // { 0x62, 0xB0, 0xEB, 0x66, 0x65, 0xFA };  // Dome shutter,  nRF52832 Chelles Obs
+  uint8_t target_adress[6] = { 0x30, 0xF3, 0x78, 0x2A, 0x67, 0xCA };  // Dome shutter, nRF52840
+
 
   // Check if advertising contain BleUart service
   if (Bluefruit.Scanner.checkReportForService(report, clientUart)) {
@@ -26,14 +28,15 @@ void scan_callback(ble_gap_evt_adv_report_t* report) {
     Serial.print("\n");
 
     //if ( (memcmp(report->peer_addr.addr,target_adress1,6) == 0) || (memcmp(report->peer_addr.addr,target_adress2,6) == 0))
-    if ((memcmp(report->peer_addr.addr, target_adress1, 6) == 0)) {
+    if ((memcmp(report->peer_addr.addr, target_adress, 6) == 0)) {
       Serial.println("MAC adress match.");
       // Connect to device with bleuart service in advertising
       Serial.print("Connecting ... ");
       Bluefruit.Central.connect(report);
+      Serial.println("Connected.");
     } else {
       Serial.print("MAC adress differt from target MAC =:  ");
-      Serial.printBufferReverse(target_adress1, 6, ':');
+      Serial.printBufferReverse(target_adress, 6, ':');
       Serial.println();
       Bluefruit.Scanner.resume();
     }
@@ -152,7 +155,7 @@ void ble_setup(void) {
   // Initialize Bluefruit with maximum connections as Peripheral = 0, Central = 1
   // SRAM usage required by SoftDevice will increase dramatically with number of connections
   Bluefruit.begin(0, 1);
-  Bluefruit.setTxPower(4); 
+  Bluefruit.setTxPower(8); 
 
   Bluefruit.setName("Dome Controler Main board");
 

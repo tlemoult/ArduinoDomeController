@@ -16,7 +16,7 @@
 Shutter shutter(PIN_LIMIT_SWITCH_CLOSE, PIN_LIMIT_SWITCH_OPEN, SHUTTER_TIMEOUT);
 
 #define DEFAULT_TIMEOUT 30000 // shutter timeout (in ms)
-extern Uart Serial ;
+//extern Uart Serial ;
 // Shutter constructor.
 // motor: pointer to an instance of Motor
 // sw1: Limit switch (closed)

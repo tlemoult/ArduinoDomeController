@@ -19,7 +19,7 @@ void ble_setup(void)
 {
   Bluefruit.begin();
   Bluefruit.setName("Dome Slave");
-  Bluefruit.setTxPower(4);    // Check bluefruit.h for supported values
+  Bluefruit.setTxPower(8);    // Check bluefruit.h for supported values
   Bluefruit.Periph.setConnectCallback(ble_connect_callback);
   Bluefruit.Periph.setDisconnectCallback(ble_disconnect_callback);
 

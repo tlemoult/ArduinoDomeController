@@ -6,7 +6,7 @@ Software look working. It's need some more tests.
 ArduinoDomeController
 =====================
 
-An astronomical observatory dome controller based on two Arduino boards ADAFruit Feather based on nordic NRF52832.
+An astronomical observatory dome controller based on two Arduino boards ADAFruit Feather based on Nordic NRF52840.
 Each is hosted on an custom home made PCBA motherboard. 
 
  * The main controller (DomeController)
@@ -40,22 +40,18 @@ which are connected to the following terminals in the VFD:
  * Counterclockwise motion
  * Jog (slow motion)
  
-For more details, read the definitions in [DomeController.ino](DomeController/DomeController.ino).
+For more details, read the definitions in [DomeController.ino](DomeController/pins.h).
 
-### Serial port selection
+### RS232 Serial port definition
 
-Set the controller port. It can be  UART over USB or a real RS232C.
-By default, ADAfruit we use the USB port.
-If we want tu use a real RS232C, we need to change the pin confuguration file 
-of ADAfruit Arduino ADA Fruit package.
+The USB port is used for bootloader and console.
+The maxdome communication port is an RS232 uart. We use the Serial1 arduino object. And we change the default ADAfruit serial port pin of "Serial1".
 
 In a windows installation arduino look into this file the following modification:
 into this file the following modification:
  * windows OS: ``C:\Users\youruser\AppData\Local\Arduino15\packages\adafruit\hardware\nrf52\1.6.1\variants\feather_nrf52840\variant.h``
  * linux OS: ``~/.arduino15/packages/adafruit/hardware/nrf52/1.6.1/variants/feather_nrf52840/variant.h``
 
-
-For RS232
 ```
 #define PIN_SERIAL1_RX       (15)
 #define PIN_SERIAL1_TX       (14)
@@ -65,7 +61,7 @@ For RS232
 Shutter controller (slave controler)
 ------------------
 
-The shutter controller is mounted in the rotating dome and it is powered by
+The shutter controller is powered by
 a 12v lead-acid battery. The battery can be charged with
 
  * a solar panel (the solution I am using).
@@ -76,7 +72,8 @@ A high efficiency DC/DC provide 5V DC form 12V battery.
 
 The shutter controller communicates with the main board thru UART over BLE
 
- ![](images/blueFruit_nRF52832.jpg)
+ ![](images/blueFruit_nRF52840.jpg)
+ ![](images/blueFruit_nRF52840-bottom.jpg)
 
 Switched power supply of the motor:
 An open collector @ 12V drive a external 12V power relay. The power contact of this relay supplies an inverter which outputs 230V AC.

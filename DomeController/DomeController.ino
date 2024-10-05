@@ -81,7 +81,7 @@ void setup() {
   // USB CDC, for logs
   // Open serial communications and wait for port to open:
   Serial.begin(115200);
-  while ( !Serial ) delay(10);   // for nrf52840 with native usb
+  delay(10);   // for nrf52840 with native usb
   Serial.println("Starting Dome controler.");
 
   ble_setup();
